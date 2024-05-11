@@ -15,9 +15,9 @@ data_target = pd.read_csv('DE_target.csv')
 
 # remove all column besides id and mature from target data
 data_target = data_target.drop(columns=['id'])
-data_target = data_target.drop(columns=['partner'])
-data_target = data_target.drop(columns=['views'])
-data_target = data_target.drop(columns=['days'])
+#data_target = data_target.drop(columns=['partner'])
+#data_target = data_target.drop(columns=['views'])
+#data_target = data_target.drop(columns=['days'])
 
 # rename new_id column to id
 data_target = data_target.rename(columns={'new_id': 'id'})
@@ -27,6 +27,14 @@ data_edges = data_edges.rename(columns={'from': 'from_id', 'to': 'to_id'})
 
 # Change mature and partner boolean to integer
 data_target['mature'] = data_target['mature'].astype(int)
+data_target['partner'] = data_target['partner'].astype(int)
+
+#cyk normalizacja
+data_target['days'] = (data_target['days'] - data_target['days'].mean()) / data_target['days'].std()
+data_target['views'] = (data_target['views'] - data_target['views'].mean()) / data_target['views'].std()
+
+# Prepare PyG data object
+node_features = torch.tensor(data_target[['mature', 'days', 'views', 'partner']].values, dtype=torch.float)  # use mature, days, and views as node features
 
 # Print the data
 print("Edges data:" )
@@ -52,13 +60,13 @@ train_indices, test_indices = train_test_split(range(len(node_ids)), test_size=0
 train_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tensor(train_indices), True)
 test_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tensor(test_indices), True)
 
-data = Data(x=x, edge_index=edge_index, y=labels, train_mask=train_mask, test_mask=test_mask)
+data = Data(x=node_features, edge_index=edge_index, y=labels, train_mask=train_mask, test_mask=test_mask)
 
 # Define GCN model
 class GCN(nn.Module):
     def __init__(self):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(data.num_features, 32)
+        self.conv1 = GCNConv(node_features.shape[1], 32)  # adjust input dimension
         self.conv2 = GCNConv(32, 2)
 
     def forward(self, data):
@@ -88,10 +96,12 @@ def test():
     out = model(data)
     pred = out.argmax(dim=1)
     correct = (pred[data.test_mask] == data.y[data.test_mask]).sum().item()
-    return correct / int(data.test_mask.sum())
+    accuracy = correct / int(data.test_mask.sum())
+
+    return accuracy
 
 # Training loop
-epochs = 200
+epochs = 500
 for epoch in range(epochs):
     loss = train()
     acc = test()
