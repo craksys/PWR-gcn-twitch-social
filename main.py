@@ -1,5 +1,6 @@
 import pandas as pd
 import torch
+import json
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from torch_geometric.data import Data
@@ -12,6 +13,17 @@ import torch.optim as optim
 # Load the data
 data_edges = pd.read_csv('DE_edges.csv')
 data_target = pd.read_csv('DE_target.csv')
+with open('DE.json') as f:
+    node_features_json = json.load(f)
+
+# Convert the JSON data to a DataFrame
+node_features_df = pd.DataFrame.from_dict(node_features_json, orient='index')
+
+# Rename the index to 'id' to match the other data
+node_features_df.index.name = 'id'
+
+# Reset the index so 'id' becomes a column
+node_features_df.reset_index(inplace=True)
 
 # remove all column besides id and mature from target data
 data_target = data_target.drop(columns=['id'])
@@ -34,8 +46,15 @@ data_target['days'] = (data_target['days'] - data_target['days'].mean()) / data_
 data_target['views'] = (data_target['views'] - data_target['views'].mean()) / data_target['views'].std()
 
 # Prepare PyG data object
-node_features = torch.tensor(data_target[['mature', 'days', 'views', 'partner']].values, dtype=torch.float)  # use mature, days, and views as node features
+node_features = torch.tensor(data_target.drop(columns=['id']).values, dtype=torch.float)  # use all columns except 'id' as node features
+data_target['id'] = data_target['id'].astype('int64')
+node_features_df['id'] = node_features_df['id'].astype('int64')
 
+# Now merge
+data_target = pd.merge(data_target, node_features_df, on='id')
+
+#place 0 insted of NaN
+data_target = data_target.fillna(0)
 # Print the data
 print("Edges data:" )
 print(data_edges.head())
@@ -62,12 +81,11 @@ test_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tenso
 
 data = Data(x=node_features, edge_index=edge_index, y=labels, train_mask=train_mask, test_mask=test_mask)
 
-# Define GCN model
 class GCN(nn.Module):
     def __init__(self):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(node_features.shape[1], 32)  # adjust input dimension
-        self.conv2 = GCNConv(32, 2)
+        self.conv1 = GCNConv(node_features.shape[1], 16)
+        self.conv2 = GCNConv(16, 2)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
