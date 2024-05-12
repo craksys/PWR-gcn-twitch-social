@@ -2,7 +2,6 @@ import pandas as pd
 import torch
 import json
 from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
