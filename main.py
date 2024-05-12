@@ -78,7 +78,7 @@ labels = torch.tensor(data_target['mature'].values, dtype=torch.long)
 
 # Prepare PyG data object
 x = torch.eye(len(node_ids))  # simplified node feature initialization: identity matrix
-train_indices, test_indices = train_test_split(range(len(node_ids)), test_size=0.2, stratify=labels)
+train_indices, test_indices = train_test_split(range(len(node_ids)), test_size=0.20, stratify=labels)
 train_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tensor(train_indices), True)
 test_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tensor(test_indices), True)
 
@@ -87,8 +87,8 @@ data = Data(x=node_features, edge_index=edge_index, y=labels, train_mask=train_m
 class GCN(nn.Module):
     def __init__(self):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(node_features.shape[1], 16)
-        self.conv2 = GCNConv(16, 2)
+        self.conv1 = GCNConv(node_features.shape[1], 32)
+        self.conv2 = GCNConv(32, 2)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -102,6 +102,8 @@ model = GCN().to(device)
 data = data.to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 criterion = nn.NLLLoss()
+#other loss functions
+#criterion = nn.CrossEntropyLoss()
 
 def train():
     model.train()
