@@ -7,6 +7,8 @@ from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
 import torch.optim as optim
+import matplotlib.pyplot as plt
+
 
 def load_data():
     data_edges = pd.read_csv('DE_edges.csv')
@@ -76,6 +78,26 @@ def test(model, data):
     accuracy = correct / int(data.test_mask.sum())
     return accuracy
 
+def plot_results(loss_values, accuracy_values):
+    # Plotting
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(loss_values, label='Train Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Loss over time')
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(accuracy_values, label='Test Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.title('Accuracy over time')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
 def main():
     data_edges, data_target, node_features_df = load_data()
     data_target, data_edges, node_features = preprocess_data(data_target, data_edges, node_features_df)
@@ -84,43 +106,18 @@ def main():
     model = GCN(node_features).to(device)
     data = data.to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    #criterion = nn.NLLLoss()
-    criterion = nn.CrossEntropyLoss() # +1% accuracy
+    criterion = nn.CrossEntropyLoss() 
     epochs = 2000
+    loss_values = []
+    accuracy_values = []
     for epoch in range(epochs):
         loss = train(model, data, optimizer, criterion)
         acc = test(model, data)
+        loss_values.append(loss)
+        accuracy_values.append(acc)
         print(f'Epoch: {epoch + 1:03d}, Loss: {loss:.4f}, Acc: {acc:.4f}')
 
-        import matplotlib.pyplot as plt
-
-        def draw_chart(loss_values, acc_values):
-            plt.plot(loss_values, label='Loss')
-            plt.plot(acc_values, label='Accuracy')
-            plt.xlabel('Epoch')
-            plt.ylabel('Value')
-            plt.legend()
-            plt.show()
-
-        if __name__ == "__main__":
-            data_edges, data_target, node_features_df = load_data()
-            data_target, data_edges, node_features = preprocess_data(data_target, data_edges, node_features_df)
-            data = prepare_data(data_target, data_edges, node_features)
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            model = GCN(node_features).to(device)
-            data = data.to(device)
-            optimizer = optim.Adam(model.parameters(), lr=0.01)
-            criterion = nn.CrossEntropyLoss()
-            epochs = 2000
-            loss_values = []
-            acc_values = []
-            for epoch in range(epochs):
-                loss = train(model, data, optimizer, criterion)
-                acc = test(model, data)
-                loss_values.append(loss)
-                acc_values.append(acc)
-                print(f'Epoch: {epoch + 1:03d}, Loss: {loss:.4f}, Acc: {acc:.4f}')
-            draw_chart(loss_values, acc_values)
+    plot_results(loss_values, accuracy_values)
 
 if __name__ == "__main__":
     main()
