@@ -9,11 +9,12 @@ from sklearn.model_selection import train_test_split
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
+SOURCE_PATH = 'dataset/'
 
 def load_data():
-    data_edges = pd.read_csv('DE_edges.csv')
-    data_target = pd.read_csv('DE_target.csv')
-    with open('DE.json') as f:
+    data_edges = pd.read_csv(SOURCE_PATH + 'DE_edges.csv')
+    data_target = pd.read_csv(SOURCE_PATH + 'DE_target.csv')
+    with open(SOURCE_PATH + 'DE.json') as f:
         node_features_json = json.load(f)
     node_features_df = pd.DataFrame.from_dict(node_features_json, orient='index')
     node_features_df.index.name = 'id'
