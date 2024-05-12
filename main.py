@@ -84,12 +84,43 @@ def main():
     model = GCN(node_features).to(device)
     data = data.to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    criterion = nn.NLLLoss()
+    #criterion = nn.NLLLoss()
+    criterion = nn.CrossEntropyLoss() # +1% accuracy
     epochs = 2000
     for epoch in range(epochs):
         loss = train(model, data, optimizer, criterion)
         acc = test(model, data)
         print(f'Epoch: {epoch + 1:03d}, Loss: {loss:.4f}, Acc: {acc:.4f}')
+
+        import matplotlib.pyplot as plt
+
+        def draw_chart(loss_values, acc_values):
+            plt.plot(loss_values, label='Loss')
+            plt.plot(acc_values, label='Accuracy')
+            plt.xlabel('Epoch')
+            plt.ylabel('Value')
+            plt.legend()
+            plt.show()
+
+        if __name__ == "__main__":
+            data_edges, data_target, node_features_df = load_data()
+            data_target, data_edges, node_features = preprocess_data(data_target, data_edges, node_features_df)
+            data = prepare_data(data_target, data_edges, node_features)
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            model = GCN(node_features).to(device)
+            data = data.to(device)
+            optimizer = optim.Adam(model.parameters(), lr=0.01)
+            criterion = nn.CrossEntropyLoss()
+            epochs = 2000
+            loss_values = []
+            acc_values = []
+            for epoch in range(epochs):
+                loss = train(model, data, optimizer, criterion)
+                acc = test(model, data)
+                loss_values.append(loss)
+                acc_values.append(acc)
+                print(f'Epoch: {epoch + 1:03d}, Loss: {loss:.4f}, Acc: {acc:.4f}')
+            draw_chart(loss_values, acc_values)
 
 if __name__ == "__main__":
     main()
