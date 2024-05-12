@@ -69,6 +69,9 @@ print(data_target.head())
 
 # Prepare edge index and mapping to target
 edge_index = torch.tensor(data_edges.values, dtype=torch.long).t().contiguous()
+#make edge_index undirected
+edge_index = torch.cat([edge_index, edge_index[[1, 0]]], dim=1)
+
 node_ids = data_target['id']
 node_to_idx = {node_id: idx for idx, node_id in enumerate(node_ids)}
 labels = torch.tensor(data_target['mature'].values, dtype=torch.long)
