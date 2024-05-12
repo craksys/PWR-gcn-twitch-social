@@ -122,7 +122,7 @@ def test():
     return accuracy
 
 # Training loop
-epochs = 500
+epochs = 2000
 for epoch in range(epochs):
     loss = train()
     acc = test()
