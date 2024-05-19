@@ -33,18 +33,17 @@ def preprocess_data(data_target, data_edges, node_features_df):
     data_target['mature'] = data_target['mature'].astype(int) # Convert the mature and partner column to int
     data_target['partner'] = data_target['partner'].astype(int)
 
-    data_target['days'] = (data_target['days'] - data_target['days'].min()) / (data_target['days'].max() - data_target['days'].min()) # Normalize the days column
+    data_target['days'] = (data_target['days'] - data_target['days'].min()) / (data_target['days'].max() - data_target['days'].min()) # Normalize data
     data_target['views'] = (data_target['views'] - data_target['views'].min()) / (data_target['views'].max() - data_target['views'].min())
 
-    #print stats from data_target['days']
-    print("Data target days stats:")
-    print(data_target['days'].describe())
-    exit()
-    node_features = torch.tensor(data_target.drop(columns=['id']).values, dtype=torch.float)
-    data_target['id'] = data_target['id'].astype('int64')
+    node_features = torch.tensor(data_target.drop(columns=['id']).values, dtype=torch.float) # Convert the node features to a tensor
+
+    data_target['id'] = data_target['id'].astype('int64') # Convert the column to int64
     node_features_df['id'] = node_features_df['id'].astype('int64')
     data_target = pd.merge(data_target, node_features_df, on='id')
-    data_target = data_target.fillna(0)
+
+    data_target = data_target.fillna(0) # Repleace NaN values with 0
+    
     return data_target, data_edges, node_features
 
 def prepare_data(data_target, data_edges, node_features):
