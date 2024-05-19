@@ -43,20 +43,22 @@ def preprocess_data(data_target, data_edges, node_features_df):
     data_target = pd.merge(data_target, node_features_df, on='id')
 
     data_target = data_target.fillna(0) # Repleace NaN values with 0
-    
+
     return data_target, data_edges, node_features
 
 def prepare_data(data_target, data_edges, node_features):
-    edge_index = torch.tensor(data_edges.values, dtype=torch.long).t().contiguous()
-    edge_index = torch.cat([edge_index, edge_index[[1, 0]]], dim=1)
-    node_ids = data_target['id']
-    node_to_idx = {node_id: idx for idx, node_id in enumerate(node_ids)}
-    labels = torch.tensor(data_target['mature'].values, dtype=torch.long)
-    x = torch.eye(len(node_ids))
-    train_indices, test_indices = train_test_split(range(len(node_ids)), test_size=0.20, stratify=labels)
-    train_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tensor(train_indices), True)
-    test_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tensor(test_indices), True)
-    data = Data(x=node_features, edge_index=edge_index, y=labels, train_mask=train_mask, test_mask=test_mask)
+    edge_index = torch.tensor(data_edges.values, dtype=torch.long).t().contiguous() # Convert the edge list to a tensor
+    edge_index = torch.cat([edge_index, edge_index[[1, 0]]], dim=1) # Add the reverse edge list
+
+    node_ids = data_target['id'] # Get the node ids
+    labels = torch.tensor(data_target['mature'].values, dtype=torch.long) # Get the labels
+
+    train_indices, test_indices = train_test_split(range(len(node_ids)), test_size=0.20, stratify=labels) # Split the data into train and test sets
+    train_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tensor(train_indices), True) # Create the train and test masks
+    test_mask = torch.zeros(len(node_ids), dtype=torch.bool).scatter_(0, torch.tensor(test_indices), True) 
+
+    data = Data(x=node_features, edge_index=edge_index, y=labels, train_mask=train_mask, test_mask=test_mask) # Create the data object
+
     return data
 
 class GCN(nn.Module):
