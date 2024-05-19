@@ -12,23 +12,34 @@ import matplotlib.pyplot as plt
 SOURCE_PATH = 'dataset/'
 
 def load_data():
-    data_edges = pd.read_csv(SOURCE_PATH + 'DE_edges.csv')
-    data_target = pd.read_csv(SOURCE_PATH + 'DE_target.csv')
-    with open(SOURCE_PATH + 'DE.json') as f:
+    data_edges = pd.read_csv(SOURCE_PATH + 'DE_edges.csv') # Load the data from the csv files
+    data_target = pd.read_csv(SOURCE_PATH + 'DE_target.csv') 
+
+    with open(SOURCE_PATH + 'DE.json') as f: # Load the node features from the json file
         node_features_json = json.load(f)
-    node_features_df = pd.DataFrame.from_dict(node_features_json, orient='index')
-    node_features_df.index.name = 'id'
+    
+    node_features_df = pd.DataFrame.from_dict(node_features_json, orient='index') # Convert the json to a pandas dataframe
+    node_features_df.index.name = 'id' 
     node_features_df.reset_index(inplace=True)
+
     return data_edges, data_target, node_features_df
 
 def preprocess_data(data_target, data_edges, node_features_df):
-    data_target = data_target.drop(columns=['id'])
-    data_target = data_target.rename(columns={'new_id': 'id'})
-    data_edges = data_edges.rename(columns={'from': 'from_id', 'to': 'to_id'})
-    data_target['mature'] = data_target['mature'].astype(int)
+
+    data_target = data_target.drop(columns=['id']) # Drop the id column (not needed for the model)
+    data_target = data_target.rename(columns={'new_id': 'id'}) # Rename the new_id column to id (because id is deprecated)
+    data_edges = data_edges.rename(columns={'from': 'from_id', 'to': 'to_id'}) # Rename the columns to match the node features
+
+    data_target['mature'] = data_target['mature'].astype(int) # Convert the mature and partner column to int
     data_target['partner'] = data_target['partner'].astype(int)
-    data_target['days'] = (data_target['days'] - data_target['days'].mean()) / data_target['days'].std()
-    data_target['views'] = (data_target['views'] - data_target['views'].mean()) / data_target['views'].std()
+
+    data_target['days'] = (data_target['days'] - data_target['days'].min()) / (data_target['days'].max() - data_target['days'].min()) # Normalize the days column
+    data_target['views'] = (data_target['views'] - data_target['views'].min()) / (data_target['views'].max() - data_target['views'].min())
+
+    #print stats from data_target['days']
+    print("Data target days stats:")
+    print(data_target['days'].describe())
+    exit()
     node_features = torch.tensor(data_target.drop(columns=['id']).values, dtype=torch.float)
     data_target['id'] = data_target['id'].astype('int64')
     node_features_df['id'] = node_features_df['id'].astype('int64')
